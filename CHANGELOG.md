@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- Support musl on Linux ([#4188](https://github.com/getsentry/sentry-dotnet/pull/4188))
+
 ## 5.7.0
 
 ### Features
