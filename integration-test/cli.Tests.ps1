@@ -108,7 +108,7 @@ Describe 'Console apps (<framework>) - native AOT publish' -ForEach @(
 
 Describe 'MAUI' -ForEach @(
     @{ framework = "net8.0" }
-) -Skip:$IsLinuxMusl {
+) -Skip:$IsLinux {
     BeforeAll {
         RegisterLocalPackage 'Sentry.Android.AssemblyReader'
         RegisterLocalPackage 'Sentry.Bindings.Android'
