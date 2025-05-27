@@ -65,6 +65,7 @@ try
         -D SENTRY_SDK_NAME=sentry.native.dotnet `
         -D SENTRY_BUILD_SHARED_LIBS=0 `
         -D SENTRY_BACKEND=inproc `
+        -D SENTRY_TRANSPORT=none `
         $additionalArgs
 
     cmake `
