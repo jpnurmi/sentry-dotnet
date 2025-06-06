@@ -8,6 +8,7 @@ on:
   pull_request:
     paths-ignore:
       - "**.md"
+  workflow_dispatch:
 
 jobs:
   build-sentry-native:
@@ -187,10 +188,10 @@ jobs:
         run: dotnet pack Sentry-CI-Build-${{ matrix.target || runner.os }}.slnf -c Release --no-build --nologo
 
       - name: Archive NuGet Packages
-        if: env.CI_PUBLISHING_BUILD == 'true'
+        #if: env.CI_PUBLISHING_BUILD == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.sha }}
+          name: ${{ env.CI_PUBLISHING_BUILD == 'true' && github.sha || format('nuget-{0}-{1}', matrix.target || runner.os, github.sha) }}
           if-no-files-found: error
           path: |
             src/**/Release/*.nupkg
