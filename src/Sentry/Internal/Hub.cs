@@ -751,7 +751,7 @@ internal class Hub : IHub, IDisposable
 #elif ANDROID
             // TODO
 #elif NET8_0_OR_GREATER
-        if (_options.InitNativeSdks && SentryNative.IsAvailable)
+        if (SentryNative.IsAvailable)
         {
             _options?.LogDebug("Closing native SDK");
             SentrySdk.CloseNativeSdk();
