@@ -14,7 +14,7 @@ jobs:
   build-sentry-native:
     name: sentry-native (${{ matrix.rid }})
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container.image }}
+    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
@@ -34,6 +34,8 @@ jobs:
             target: Linux-musl
             container:
               image: ghcr.io/jpnurmi/sentry-dotnet-alpine:3.21 # TODO: getsentry
+              volumes:
+                - /tmp/node20:/__e/node20
           - rid: macos # universal osx-x64 + osx-arm64
             os: macos-15 # Pin macos to get the version of Xcode that we need: https://github.com/actions/runner-images/issues/10703
           - rid: win-x64
@@ -43,6 +45,14 @@ jobs:
             target: Windows-arm64
 
     steps:
+      - name: Prepare Alpine
+        if: ${{ contains(matrix.container.image, 'alpine') && runner.arch != 'X64' }}
+        run: |
+          sudo mkdir -p /__e/node20/bin
+          sudo ln -sf /usr/bin/node /__e/node20/bin/node
+          sudo ln -sf /usr/bin/npm /__e/node20/bin/npm
+          sudo sed -i 's/ID=alpine/ID=unknown/' /usr/lib/os-release
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -99,6 +109,7 @@ jobs:
             container:
               image: ghcr.io/jpnurmi/sentry-dotnet-alpine:3.21 # TODO: getsentry
               volumes:
+                - /tmp/node20:/__e/node20
                 - /var/run/docker.sock:/var/run/docker.sock
           - rid: macos # universal osx-x64 + osx-arm64
             os: macos-15 # Pin macos to get the version of Xcode that we need: https://github.com/actions/runner-images/issues/10703
@@ -109,6 +120,14 @@ jobs:
             target: Windows-arm64
 
     steps:
+      - name: Prepare Alpine
+        if: ${{ contains(matrix.container.image, 'alpine') && runner.arch != 'X64' }}
+        run: |
+          sudo mkdir -p /__e/node20/bin
+          sudo ln -sf /usr/bin/node /__e/node20/bin/node
+          sudo ln -sf /usr/bin/npm /__e/node20/bin/npm
+          sudo sed -i 's/ID=alpine/ID=unknown/' /usr/lib/os-release
+
       - name: Cancel Previous Runs
         if: github.ref_name != 'main' && !startsWith(github.ref_name, 'release/')
         uses: styfle/cancel-workflow-action@85880fa0301c86cca9da44039ee3bb12d3bedbfa # Tag: 0.12.1
