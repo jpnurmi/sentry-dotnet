@@ -11,23 +11,34 @@ on:
 
 jobs:
   build-sentry-native:
-    name: sentry-native (${{ matrix.container.image || matrix.os }})
+    name: sentry-native (${{ matrix.rid }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container.image }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04 # Pin ubuntu to ensure mono is installed
-          - os: ubuntu-22.04-arm
+          - rid: linux-x64
+            os: ubuntu-22.04 # Pin ubuntu to ensure mono is installed
+          - rid: linux-arm64
+            os: ubuntu-22.04-arm
             target: Linux-arm64
-          - os: ubuntu-latest
+          - rid: linux-musl-x64
+            os: ubuntu-latest
             target: Linux-musl
             container:
               image: ghcr.io/getsentry/sentry-dotnet-alpine:3.21
-          - os: macos-15 # Pin macos to get the version of Xcode that we need: https://github.com/actions/runner-images/issues/10703
-          - os: windows-latest
-          - os: windows-11-arm
+          - rid: linux-musl-arm64
+            os: ubuntu-24.04-arm
+            target: Linux-musl
+            container:
+              image: ghcr.io/jpnurmi/sentry-dotnet-alpine:3.21 # TODO: getsentry
+          - rid: macos # universal osx-x64 + osx-arm64
+            os: macos-15 # Pin macos to get the version of Xcode that we need: https://github.com/actions/runner-images/issues/10703
+          - rid: win-x64
+            os: windows-latest
+          - rid: win-arm64
+            os: windows-11-arm
             target: Windows-arm64
 
     steps:
@@ -47,7 +58,7 @@ jobs:
         id: cache
         with:
           path: src/Sentry/Platforms/Native/sentry-native
-          key: sentry-native-${{ matrix.target || runner.os }}-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          key: sentry-native-${{ matrix.rid }}-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
           enableCrossOsArchive: true
 
       - name: Remove unused applications
@@ -60,7 +71,7 @@ jobs:
 
   build:
     needs: build-sentry-native
-    name: .NET (${{ matrix.container.image || matrix.os }})
+    name: .NET (${{ matrix.rid }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
 
@@ -68,19 +79,32 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04 # Pin ubuntu to ensure mono is installed
+          - rid: linux-x64
+            os: ubuntu-22.04 # Pin ubuntu to ensure mono is installed
             target: Linux
-          - os: ubuntu-22.04-arm
+          - rid: linux-arm64
+            os: ubuntu-22.04-arm
             target: Linux-arm64
-          - os: ubuntu-latest
+          - rid: linux-musl-x64
+            os: ubuntu-latest
             target: Linux-musl
             container:
               image: ghcr.io/getsentry/sentry-dotnet-alpine:3.21
               volumes:
                 - /var/run/docker.sock:/var/run/docker.sock
-          - os: macos-15 # Pin macos to get the version of Xcode that we need: https://github.com/actions/runner-images/issues/10703
-          - os: windows-latest
-          - os: windows-11-arm
+          - rid: linux-musl-arm64
+            os: ubuntu-24.04-arm
+            target: Linux-musl
+            container:
+              image: ghcr.io/jpnurmi/sentry-dotnet-alpine:3.21 # TODO: getsentry
+              volumes:
+                - /var/run/docker.sock:/var/run/docker.sock
+          - rid: macos # universal osx-x64 + osx-arm64
+            os: macos-15 # Pin macos to get the version of Xcode that we need: https://github.com/actions/runner-images/issues/10703
+          - rid: win-x64
+            os: windows-latest
+          - rid: win-arm64
+            os: windows-11-arm
             target: Windows-arm64
 
     steps:
@@ -106,53 +130,61 @@ jobs:
         if: runner.os == 'macOS'
         run: echo "CI_PUBLISHING_BUILD=true" >> $GITHUB_ENV
 
-      - name: Download sentry-native (Linux)
-        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.target == 'Linux') }}
+      - name: Download sentry-native (linux-x64)
+        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.rid == 'linux-x64') }}
         uses: actions/cache/restore@v4
         with:
           path: src/Sentry/Platforms/Native/sentry-native
-          key: sentry-native-Linux-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          key: sentry-native-linux-x64-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
           fail-on-cache-miss: true
 
-      - name: Download sentry-native (Linux arm64)
-        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.target == 'Linux-arm64') }}
+      - name: Download sentry-native (linux-arm64)
+        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.rid == 'linux-arm64') }}
         uses: actions/cache/restore@v4
         with:
           path: src/Sentry/Platforms/Native/sentry-native
-          key: sentry-native-Linux-arm64-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          key: sentry-native-linux-arm64-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
           fail-on-cache-miss: true
 
-      - name: Download sentry-native (Linux musl)
-        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.target == 'Linux-musl') }}
+      - name: Download sentry-native (linux-musl-x64)
+        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.rid == 'linux-musl-x64') }}
         uses: actions/cache/restore@v4
         with:
           path: src/Sentry/Platforms/Native/sentry-native
-          key: sentry-native-Linux-musl-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          key: sentry-native-linux-musl-x64-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
           fail-on-cache-miss: true
 
-      - name: Download sentry-native (macOS)
-        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (runner.os == 'macOS') }}
+      - name: Download sentry-native (linux-musl-arm64)
+        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.rid == 'linux-musl-arm64') }}
         uses: actions/cache/restore@v4
         with:
           path: src/Sentry/Platforms/Native/sentry-native
-          key: sentry-native-macOS-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          key: sentry-native-linux-musl-arm64-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
           fail-on-cache-miss: true
 
-      - name: Download sentry-native (Windows)
-        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (runner.os == 'Windows' && runner.arch == 'X64') }}
+      - name: Download sentry-native (macos)
+        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.rid == 'macos') }}
         uses: actions/cache/restore@v4
         with:
           path: src/Sentry/Platforms/Native/sentry-native
-          key: sentry-native-Windows-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          key: sentry-native-macos-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          fail-on-cache-miss: true
+
+      - name: Download sentry-native (win-x64)
+        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.rid == 'win-x64') }}
+        uses: actions/cache/restore@v4
+        with:
+          path: src/Sentry/Platforms/Native/sentry-native
+          key: sentry-native-win-x64-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
           fail-on-cache-miss: true
           enableCrossOsArchive: true
 
-      - name: Download sentry-native (Windows arm64)
-        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (runner.os == 'Windows' && runner.arch == 'ARM64') }}
+      - name: Download sentry-native (win-arm64)
+        if: ${{ (env.CI_PUBLISHING_BUILD == 'true') || (matrix.rid == 'win-arm64') }}
         uses: actions/cache/restore@v4
         with:
           path: src/Sentry/Platforms/Native/sentry-native
-          key: sentry-native-Windows-arm64-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          key: sentry-native-win-arm64-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
           fail-on-cache-miss: true
           enableCrossOsArchive: true
 
@@ -237,7 +269,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: src/Sentry/Platforms/Native/sentry-native
-          key: sentry-native-Windows-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          key: sentry-native-win-x64-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
           fail-on-cache-miss: true
           enableCrossOsArchive: true
 
@@ -283,7 +315,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: src/Sentry/Platforms/Native/sentry-native
-          key: sentry-native-macOS-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
+          key: sentry-native-macos-${{ hashFiles('scripts/build-sentry-native.ps1') }}-${{ hashFiles('.git/modules/modules/sentry-native/HEAD') }}
           fail-on-cache-miss: true
 
       - name: Setup Environment
