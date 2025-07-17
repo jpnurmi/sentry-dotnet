@@ -6,22 +6,19 @@ Push-Location $PSScriptRoot/..
 try
 {
     $submodule = 'modules/sentry-native'
-    $outDir = 'src/Sentry/Platforms/Native/sentry-native'
+    $sourceDir = 'src/Sentry/Platforms/Native'
+    $outDir = "$sourceDir/sentry-native"
     $buildDir = "$submodule/build"
-    $actualBuildDir = $buildDir
+    $actualBuildDir = "$buildDir/sentry-native"
 
-    $additionalArgs = @()
     $libPrefix = 'lib'
     $libExtension = '.a'
     if ($IsMacOS)
     {
         $outDir += '/osx'
-        $additionalArgs += @('-D', 'CMAKE_OSX_ARCHITECTURES=arm64;x86_64')
-        $additionalArgs += @('-D', 'CMAKE_OSX_DEPLOYMENT_TARGET=12.0')
     }
     elseif ($IsWindows)
     {
-        $additionalArgs += @('-C', 'src/Sentry/Platforms/Native/windows-config.cmake')
         $actualBuildDir = "$buildDir/RelWithDebInfo"
         $libPrefix = ''
         $libExtension = '.lib'
@@ -69,14 +66,9 @@ try
     }
 
     cmake `
-        -S $submodule `
+        -S $sourceDir `
         -B $buildDir `
-        -D CMAKE_BUILD_TYPE=RelWithDebInfo `
-        -D SENTRY_SDK_NAME=sentry.native.dotnet `
-        -D SENTRY_BUILD_SHARED_LIBS=0 `
-        -D SENTRY_BACKEND=inproc `
-        -D SENTRY_TRANSPORT=none `
-        $additionalArgs
+        -D CMAKE_BUILD_TYPE=RelWithDebInfo
 
     cmake `
         --build $buildDir `
