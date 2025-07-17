@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixes
+
+- Native AOT support for `linux-musl-arm64` ([#4365](https://github.com/getsentry/sentry-dotnet/pull/4365))
+
 ### Dependencies
 
 - Bump CLI from v2.47.0 to v2.47.1 ([#4348](https://github.com/getsentry/sentry-dotnet/pull/4348))
